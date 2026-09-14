@@ -671,7 +671,7 @@ spawn_remote_secondmate() {
     harness=$("$FM_ROOT/bin/fm-harness.sh" secondmate)
   fi
   case "$harness" in
-    claude|codex|opencode|pi|pi-signed|grok|kimi|cursor|codebuddy) ;;
+    claude|codex|opencode|pi|pi-signed|grok|kimi|cursor) ;;
     *)
       fm_lock_release "$registry_lock" || true
       fm_lock_release "$SPAWN_TASK_LOCK" || true
@@ -1732,8 +1732,9 @@ launch_template() {
     # depth, the same reason cursor, muse, rovo, and agy clear them. Unlike the
     # -y shorthand (HIGH/CRITICAL still ask), --permission-mode bypassPermissions
     # is the full auto-approve posture an unattended worker needs. The turn-end
-    # hook surface is unverified; busy state is a rendered-tail fallback in
-    # bin/fm-busy-lib.sh and nothing is armed below until a supervised trial
+    # hook surface is unverified; fm_busy_classify classifies a codebuddy task
+    # as the default unknown (no busy sidecar is armed and bin/fm-busy-lib.sh
+    # has no codebuddy arm). Nothing is armed below until a supervised trial
     # task verifies a semantic source (harness-adapters owns that gate).
     codebuddy) printf '%s' 'env -u CLAUDECODE -u PI_CODING_AGENT -u GROK_AGENT -u FM_PI_HARNESS codebuddy --permission-mode bypassPermissions __MODELFLAG____EFFORTFLAG__"$(__OPINPUT__ encode launch-brief < __BRIEF__)"' ;;
     # The catch-all is the unverified-adapter guard: every caller treats a
@@ -1795,6 +1796,11 @@ esac
 # secondmate whose supervision cycle could never be armed.
 # agy has none either: it exposes no hook surface for primary supervision and
 # docs/supervision-protocols/ carries no agy wake protocol (agy 1.2.0).
+# codebuddy is refused for the same boundary even though its launch wiring
+# exists: statics were established from the binary, but no live busy signature,
+# trust behavior, or primary supervision protocol has survived the supervised
+# trial yet, so a codebuddy secondmate would stand up with no way to arm its
+# watch cycle either (references/harness/codebuddy.md).
 if [ "$KIND" = secondmate ] && { [ "$HARNESS" = muse ] || [ "$HARNESS" = gemini ] || [ "$HARNESS" = agy ] || [ "$HARNESS" = codebuddy ]; }; then
   echo "error: $HARNESS is a verified crewmate/scout adapter only and cannot run a secondmate; it has no primary supervision protocol. Select a harness verified for secondmates." >&2
   exit 1
@@ -1804,12 +1810,7 @@ fi
 # verified primary integration, so a secondmate (a firstmate instance that must
 # itself act as a primary) could never be supervised. Refuse loudly rather than
 # standing one up with no way to arm its watch cycle.
-# codebuddy is refused for a secondmate for the same boundary even though its
-# launch wiring exists: statics were established from the binary, but no live
-# busy signature, trust behavior, or primary supervision protocol has survived
-# the supervised trial yet, so a codebuddy secondmate would stand up with no
-# way to arm its watch cycle either (references/harness/codebuddy.md).
-if [ "$KIND" = secondmate ] && { [ "$HARNESS" = rovo ] || [ "$HARNESS" = codebuddy ]; }; then
+if [ "$KIND" = secondmate ] && [ "$HARNESS" = rovo ]; then
   echo "error: $HARNESS is a verified crewmate/scout adapter only and cannot run a secondmate; it has no primary supervision protocol. Select a harness verified for secondmates." >&2
   exit 1
 fi
