@@ -273,6 +273,10 @@
       "audience": "agent-runtime"
     },
     {
+      "path": "CODEBUDDY.md",
+      "audience": "agent-runtime"
+    },
+    {
       "path": "CONTRIBUTING.md",
       "audience": "maintainer-architecture"
     },
