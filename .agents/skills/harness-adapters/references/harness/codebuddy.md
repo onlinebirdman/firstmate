@@ -2,7 +2,7 @@
 
 CodeBuddy's `codebuddy` (aliased `cbc`) CLI, wired into Firstmate's adapter sets on 2026-09-14 for codebuddy 2.150.0.
 Statics were established from the installed binary's own `--help` text and process strings; the live harness behaviors below that are marked **unverified** must be confirmed by a supervised trial task before this adapter is treated as fully verified per `../../../../../AGENTS.md` section 4.
-Crewmate and scout launch wiring is present in `../../../../../bin/fm-spawn.sh`; secondmate handling is wired at the spawn boundary but deliberately refused at the control plane until the trial passes.
+Crewmate, scout, and secondmate launch wiring is present in `../../../../../bin/fm-spawn.sh`; the secondmate boundary is OPEN as of 2026-09-15, because the primary supervision path it tests for is now live-verified (see `## Primary integration` and `../../../../../docs/verification/codebuddy-primary.md`).
 Primary wiring is present too: the tracked `../../../../../.codebuddy/settings.json` mirrors the tracked Claude hook file, and the primary protocol is [`docs/supervision-protocols/codebuddy.md`](../../../../../docs/supervision-protocols/codebuddy.md).
 
 ## Operating facts

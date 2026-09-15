@@ -1796,12 +1796,17 @@ esac
 # secondmate whose supervision cycle could never be armed.
 # agy has none either: it exposes no hook surface for primary supervision and
 # docs/supervision-protocols/ carries no agy wake protocol (agy 1.2.0).
-# codebuddy is refused for the same boundary even though its launch wiring
-# exists: statics were established from the binary, but no live busy signature,
-# trust behavior, or primary supervision protocol has survived the supervised
-# trial yet, so a codebuddy secondmate would stand up with no way to arm its
-# watch cycle either (references/harness/codebuddy.md).
-if [ "$KIND" = secondmate ] && { [ "$HARNESS" = muse ] || [ "$HARNESS" = gemini ] || [ "$HARNESS" = agy ] || [ "$HARNESS" = codebuddy ]; }; then
+# codebuddy is deliberately NOT in this refusal set. It was, until the primary
+# supervision path was live-verified (docs/verification/codebuddy-primary.md):
+# the tracked .codebuddy/settings.json registers the Claude-family Stop pair, a
+# codebuddy session can hold state/.lock, and a Stop boundary armed a real
+# watcher whose exit-2 rewake reached the session - which is exactly the
+# "would have no way to arm its watch cycle" test this guard exists to enforce.
+# The still-unverified codebuddy facts are worker-side (busy-state signature,
+# interactive composer, interrupt), and those govern codebuddy CREWMATES, not a
+# codebuddy secondmate's own supervision. The captain explicitly accepted that
+# boundary for the ryfund secondmate on 2026-09-15.
+if [ "$KIND" = secondmate ] && { [ "$HARNESS" = muse ] || [ "$HARNESS" = gemini ] || [ "$HARNESS" = agy ]; }; then
   echo "error: $HARNESS is a verified crewmate/scout adapter only and cannot run a secondmate; it has no primary supervision protocol. Select a harness verified for secondmates." >&2
   exit 1
 fi
@@ -4118,9 +4123,9 @@ if [ "$KIND" = secondmate ]; then
   # Keep this in step with fm_supervision_model (bin/fm-wake-lib.sh): Claude's
   # Stop auto-arm, Cursor's stop-hook park, and codebuddy's Claude-compatible
   # Stop auto-arm all run the watcher only BETWEEN turns, so a fresh beacon with
-  # no live watcher is their healthy mid-turn state. codebuddy is refused as a
-  # secondmate above, so its arm is currently unreachable here; it is listed
-  # anyway so the two tables cannot drift apart.
+  # no live watcher is their healthy mid-turn state. codebuddy's arm is reachable
+  # since 2026-09-15, when its primary supervision path was live-verified and the
+  # secondmate refusal dropped it.
   # Pi and pi-signed secondmates previously received persistent here and now
   # receive extension to match fm_supervision_model's own table, so their pull
   # guard tolerates the extension hand-off exactly as a Pi primary does.

@@ -95,7 +95,9 @@ The wake drained clean on the follow-up turn with no open decisions or unread st
 The turn-end guard's own blocking path (`bin/fm-turnend-guard.sh --codebuddy` re-blocking when no watcher and no auto-arm claim exist) was not exercised: every observed Stop was allowed by a healthy watcher or by the auto-arm's open claim, which is the co-operating path and the one the protocol wants.
 Its `--codebuddy` alias is pinned offline to the shared `--claude` mode, so only the live blocking branch is unobserved.
 Interactive composer shape, interrupt behavior (single `Escape`, and whether an interrupt repollutes the composer), and busy-state classification for codebuddy *workers* remain unverified, so `bin/fm-spawn.sh` still arms no worker busy source for it.
-codebuddy is still refused as a secondmate, and no codebuddy secondmate lifecycle has been attempted.
+The secondmate boundary is OPEN as of 2026-09-15: the guard in `bin/fm-spawn.sh` refuses a secondmate only for harnesses with no primary supervision protocol, and codebuddy's is live-verified above.
+The captain explicitly accepted the residual worker-side gaps for the `ryfund` secondmate.
+No codebuddy secondmate lifecycle has been attempted yet, so its own startup, recovery, and crewmate-spawning behavior is unobserved.
 
 ## Refreshing this record
 

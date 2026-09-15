@@ -103,19 +103,17 @@ fm_control_harness_family() {  # <recorded-harness>
 # plane asks this BEFORE it stops anything, so an incompatible relaunch target is
 # refused while the current agent is still running rather than after it has
 # been stopped.
+# codebuddy is deliberately NOT in that refusal set: its primary supervision
+# path was live-verified on 2026-09-15, so the "can this secondmate arm a watch
+# cycle" test the refusal exists for now passes for it
+# (docs/verification/codebuddy-primary.md). Refusing it here while
+# bin/fm-spawn.sh admits it would make a codebuddy secondmate launchable and
+# then unrestartable, so the two boundaries move together.
 fm_control_harness_supports_kind() {  # <harness> <kind>
   local harness=${1-} kind=${2-}
   fm_control_harness_supported "$harness" || return 1
   case "$harness" in
     muse|gemini|rovo|agy) [ "$kind" != secondmate ] || return 1 ;;
-  esac
-  # codebuddy: secondmate support is wired at the spawn boundary but its
-  # secondmate lifecycle is part of the supervised trial verification; until
-  # that trial passes, refuse secondmate through control just like the
-  # crewmate-scout-only group so an interruption cannot strand an unverified
-  # secondmate home.
-  case "$harness" in
-    codebuddy) [ "$kind" != secondmate ] || return 1 ;;
   esac
   return 0
 }
