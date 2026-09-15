@@ -638,6 +638,42 @@ fi
 [ "$err" = "error: invalid quota-axi provider data" ] || fail "invalid availability status returned: $err"
 ok "invalid availability status fails closed"
 
+# codebuddy is a surface quota-axi does not model, so it reaches the helper only
+# through --companion; the helper still takes no quota-axi snapshot of its own.
+COMPANION="$LAB/codebuddy-companion.json"
+COMPANION_ZERO="$LAB/codebuddy-companion-zero.json"
+cat > "$COMPANION" <<'JSON'
+{"schemaVersion":5,"providers":[{"provider":"codebuddy","quotaSemantics":{"status":"known","effectiveAvailability":[{"scope":"all_products","status":"known","effectivePercentRemaining":42,"runway":{"status":"through_reset"}}]}}]}
+JSON
+cat > "$COMPANION_ZERO" <<'JSON'
+{"schemaVersion":5,"providers":[{"provider":"codebuddy","quotaSemantics":{"status":"known","effectiveAvailability":[{"scope":"all_products","status":"known","effectivePercentRemaining":0,"runway":{"status":"exhausted_now"}}]}}]}
+JSON
+
+out=$(call_choose --snapshot "$LAB/captured.json" --companion "$COMPANION" --candidate codebuddy:hy3)
+[ "$out" = "codebuddy hy3" ] || fail "codebuddy companion candidate: expected 'codebuddy hy3', got '$out'"
+ok "codebuddy candidate is selectable through --companion"
+
+if out=$(call_choose --snapshot "$LAB/captured.json" --candidate codebuddy:hy3 2>/dev/null); then
+  fail "codebuddy without a companion unexpectedly dispatched"
+fi
+[ "$out" = "none" ] || fail "codebuddy without companion: expected 'none', got '$out'"
+ok "codebuddy without a companion is unknown and skipped"
+
+if out=$(call_choose --snapshot "$LAB/captured.json" --companion "$COMPANION_ZERO" --candidate codebuddy:hy3 2>/dev/null); then
+  fail "exhausted codebuddy companion unexpectedly dispatched"
+fi
+[ "$out" = "none" ] || fail "exhausted codebuddy companion: expected 'none', got '$out'"
+ok "an exhausted codebuddy companion is skipped"
+
+if err=$(call_choose --snapshot "$LAB/captured.json" --companion "$LAB/captured.json" --candidate claude:default 2>&1); then
+  fail "a duplicate companion provider unexpectedly dispatched"
+fi
+case "$err" in
+  *"duplicate provider in composed quota snapshot"*) : ;;
+  *) fail "duplicate companion provider returned: $err" ;;
+esac
+ok "a duplicate companion provider is refused"
+
 [ "$(wc -l < "$CALLS" | tr -d '[:space:]')" = 1 ] || fail "helper took an additional quota snapshot"
 ok "helper reuses the captured quota snapshot"
 

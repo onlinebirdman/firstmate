@@ -2,7 +2,7 @@
 # Choose the first quota-eligible candidate from a ranked list.
 #
 # Usage:
-#   fm-quota-choose.sh [--snapshot <path>] [--candidate <harness:model>]...
+#   fm-quota-choose.sh [--snapshot <path>] [--companion <path>] [--candidate <harness:model>]...
 #
 # Reads one already-captured quota-axi default TOON or JSON snapshot from the
 # provided file, or from stdin when --snapshot is omitted. For each --candidate
@@ -12,6 +12,12 @@
 # effective percent remaining is greater than zero. The first eligible
 # candidate is printed as "<harness> <model>" and the script exits 0.
 # If no candidate is quota-eligible, it prints "none" and exits 1.
+#
+# --companion <path> composes a second schemaVersion 5 snapshot - normally the
+# CodeBuddy fragment from bin/fm-codebuddy-usage.sh - into the primary snapshot
+# before selection, via fm_quota_json_compose. This is how a surface quota-axi
+# does not model joins the same evidence the helper already reasons over without
+# the helper taking a second quota-axi snapshot of its own.
 #
 # Candidates are accepted as `--candidate <harness:model>` or as positional
 # colon-separated arguments, with earlier candidates preferred.
@@ -34,6 +40,13 @@
 # provider - is owned by AGENTS.md section 4 and the quota-array-dispatch skill,
 # not by this helper. Use this helper only when the brief already fixed the
 # candidate order and every candidate's provider is the harness's primary family.
+#
+# CodeBuddy (`codebuddy`) is a surface quota-axi does not model: its usage lives
+# in the opencli account library and reaches this helper only through
+# --companion. It maps to the provider family `codebuddy` and its eligibility
+# uses the composed `all_products` scope. It carries no `spendPriority`, so the
+# helper's order-and-eligibility rule decides it and the agent treats its rank as
+# disclosed uncertainty (see the quota-array-dispatch skill).
 #
 # omp (Oh My Pi) has no single primary family, so its candidate model prefix
 # selects the family: openai-codex/<id> checks the codex row and
@@ -65,12 +78,18 @@ usage() {
 
 CANDIDATES=()
 SNAPSHOT_SOURCE=
+COMPANION_SOURCE=
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --snapshot)
       [ -n "${2-}" ] || die "--snapshot needs a path"
       SNAPSHOT_SOURCE=$2
+      shift 2
+      ;;
+    --companion)
+      [ -n "${2-}" ] || die "--companion needs a path"
+      COMPANION_SOURCE=$2
       shift 2
       ;;
     --candidate)
@@ -306,15 +325,29 @@ else
   ' 2>/dev/null) || die "invalid quota-axi snapshot"
 fi
 
+# A companion snapshot (for example bin/fm-codebuddy-usage.sh quota) carries a
+# surface quota-axi does not model. It is a caller-supplied regular file, the
+# same hardening as --snapshot, and is composed in rather than validated as a
+# second independent snapshot.
+if [ -n "$COMPANION_SOURCE" ]; then
+  [ -f "$COMPANION_SOURCE" ] && [ ! -L "$COMPANION_SOURCE" ] || die "companion is not a regular file: $COMPANION_SOURCE"
+  COMPANION_JSON=$(cat -- "$COMPANION_SOURCE") || die "cannot read companion snapshot: $COMPANION_SOURCE"
+  [ -n "$COMPANION_JSON" ] || die "empty companion snapshot"
+  printf '%s\n' "$COMPANION_JSON" | jq -e 'type == "object" and .schemaVersion == 5' >/dev/null 2>&1 \
+    || die "companion snapshot must be a schemaVersion 5 object"
+  QUOTA_JSON=$(fm_quota_json_compose "$QUOTA_JSON" "$COMPANION_JSON") || die "cannot compose companion snapshot"
+fi
+
 printf '%s\n' "$QUOTA_JSON" | fm_quota_json_valid || die "invalid quota-axi provider data"
 
 # provider_for_harness <harness> [<model>]
 # Map a firstmate harness name to its primary quota-axi provider family.
 # Multi-provider harnesses (Pi, OpenCode) map to their primary family only; see
 # the header limitation note. omp is keyed on the candidate model prefix instead
-# and has no family for any other prefix (see the header). Authoritative
-# multi-provider routing is owned by AGENTS.md section 4 and the
-# quota-array-dispatch skill, not this helper.
+# and has no family for any other prefix (see the header). codebuddy maps to the
+# `codebuddy` family, which exists only in a --companion snapshot because
+# quota-axi does not model it. Authoritative multi-provider routing is owned by
+# AGENTS.md section 4 and the quota-array-dispatch skill, not this helper.
 provider_for_harness() {
   case "$1" in
     omp)
@@ -332,6 +365,7 @@ provider_for_harness() {
     kimi)         printf 'kimi\n' ;;
     cursor)       printf 'cursor\n' ;;
     muse)         printf 'meta\n' ;;
+    codebuddy)    printf 'codebuddy\n' ;;
     *)            return 1 ;;
   esac
 }

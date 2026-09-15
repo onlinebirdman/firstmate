@@ -34,6 +34,16 @@ Use it only when the brief already fixed the candidate order and every candidate
 It does not replace the reasoning-class, runway-feasibility, or authentication gates above.
 Firstmate can optionally arm `bin/fm-procevent-quota.sh` for a recurring mid-task check that wakes when the tracked provider drops below its configured threshold or its runway becomes `exhausted_now`.
 
+## CodeBuddy surface
+
+CodeBuddy (`codebuddy`) is a surface quota-axi does not model: its allowance is account plan/bonus credits owned by the `opencli codebuddy` account library, not a provider window.
+`bin/fm-codebuddy-usage.sh` is the only approved reader.
+`show` renders the account library; `quota` prints a schemaVersion 5 provider fragment for the current CLI account (`provider: codebuddy`, `scope: all_products`) whose `effectivePercentRemaining` is that account's `totalRemain` over its summed plan+bonus allotment, and whose runway is `through_reset` at the account's `cycleEnd` (or `exhausted_now` at zero credits).
+Join it to the intake snapshot with `fm_quota_json_compose`, which the helper accepts as `fm-quota-choose.sh --companion <file>`, so the composited evidence is the same one the helper selects from.
+CodeBuddy rows carry no `spendPriority`, so rank them as disclosed uncertainty: a codebuddy candidate stays eligible with unknown `spendPriority`, and the helper's order-and-eligibility rule decides it.
+Do not read expiring bonus credits as exhaustion; the fragment discloses expiry in a separate unknown scope rather than a known low runway.
+Optional mid-task tracking: `bin/fm-procevent-quota.sh --provider codebuddy` reads the same fragment and requires `opencli` instead of the quota-axi floor.
+
 ## Read the default TOON
 
 Start each intake by running `quota-axi` once with no `--json`, and reuse that TOON for every candidate.
