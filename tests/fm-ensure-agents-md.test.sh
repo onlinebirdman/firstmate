@@ -502,6 +502,26 @@ test_distinct_real_codebuddy_is_refused() {
   pass "fm-ensure-agents-md.sh: refuses a distinct real CODEBUDDY.md"
 }
 
+test_two_distinct_real_pointers_without_agents_md_are_refused() {
+  local repo out rc
+  repo="$TMP_ROOT/two-real-pointers-no-agents-project"
+  mkdir -p "$repo"
+  printf '# Claude memory\n' > "$repo/CLAUDE.md"
+  printf '# CodeBuddy memory\n' > "$repo/CODEBUDDY.md"
+  cp "$repo/CLAUDE.md" "$repo/.claude-before"
+  cp "$repo/CODEBUDDY.md" "$repo/.codebuddy-before"
+  out=$("$ROOT/bin/fm-ensure-agents-md.sh" "$repo" 2>&1)
+  rc=$?
+  [ "$rc" -ne 0 ] || fail "expected a non-zero exit for two distinct real pointers with no AGENTS.md, got: $out"
+  assert_contains "$out" "conflict:" "two distinct real pointers did not report a conflict"
+  assert_absent "$repo/AGENTS.md" "a refused two-pointer project still gained an AGENTS.md"
+  cmp -s "$repo/.claude-before" "$repo/CLAUDE.md" \
+    || fail "two-pointer refusal modified CLAUDE.md"
+  cmp -s "$repo/.codebuddy-before" "$repo/CODEBUDDY.md" \
+    || fail "two-pointer refusal modified CODEBUDDY.md"
+  pass "fm-ensure-agents-md.sh: refuses two distinct real pointer files with no AGENTS.md"
+}
+
 test_promotion_from_codebuddy_memory() {
   local repo agents
   repo="$TMP_ROOT/codebuddy-only-project"
@@ -543,4 +563,5 @@ test_codebuddy_symlink_migrates_to_pointer
 test_codebuddy_wrong_target_symlink_is_refused
 test_non_regular_codebuddy_md_is_refused
 test_distinct_real_codebuddy_is_refused
+test_two_distinct_real_pointers_without_agents_md_are_refused
 test_promotion_from_codebuddy_memory

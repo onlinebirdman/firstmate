@@ -242,23 +242,28 @@ done
 
 AGENTS_EXISTED=0
 PROMOTED=
+REAL_OTHER=
+REAL_OTHER_LIST=
+REAL_OTHER_COUNT=0
+for f in "${POINTERS[@]}"; do
+  if [ "$(ptr_state "$f")" = real_other ]; then
+    REAL_OTHER_COUNT=$((REAL_OTHER_COUNT + 1))
+    [ -n "$REAL_OTHER" ] || REAL_OTHER=$f
+    REAL_OTHER_LIST="${REAL_OTHER_LIST:+$REAL_OTHER_LIST, }$f"
+  fi
+done
+
 if [ -e "$AGENTS" ]; then
   AGENTS_EXISTED=1
-  for f in "${POINTERS[@]}"; do
-    if [ "$(ptr_state "$f")" = real_other ]; then
-      conflict "both AGENTS.md and $f are real files in $DIR; reconcile them manually"
-    fi
-  done
-else
-  # Promote the first real non-canonical pointer file (highest precedence first)
-  # into AGENTS.md rather than writing a fresh skeleton over its content.
-  for f in "${POINTERS[@]}"; do
-    if [ "$(ptr_state "$f")" = real_other ]; then
-      mv "$f" "$AGENTS"
-      PROMOTED=$f
-      break
-    fi
-  done
+  [ "$REAL_OTHER_COUNT" -eq 0 ] ||
+    conflict "both AGENTS.md and $REAL_OTHER_LIST are real files in $DIR; reconcile them manually"
+elif [ "$REAL_OTHER_COUNT" -eq 1 ]; then
+  # Promote the lone real non-canonical pointer file into AGENTS.md rather than
+  # writing a fresh skeleton over its content.
+  mv "$REAL_OTHER" "$AGENTS"
+  PROMOTED=$REAL_OTHER
+elif [ "$REAL_OTHER_COUNT" -gt 1 ]; then
+  conflict "distinct real memory files $REAL_OTHER_LIST exist in $DIR with no AGENTS.md; reconcile them manually"
 fi
 
 if [ -e "$AGENTS" ]; then
