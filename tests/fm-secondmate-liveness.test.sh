@@ -370,6 +370,22 @@ test_sweep_respawns_confirmed_dead_secondmate() {
   pass "sweep: a confirmed-dead secondmate endpoint is killed and respawned"
 }
 
+test_sweep_respawns_confirmed_dead_codebuddy_secondmate() {
+  local w fb tmuxfb log out
+  w=$(new_world sweep-dead-codebuddy)
+  add_sm_home "$w" sm1 firstmate:fm-sm1 codebuddy
+  fb=$(make_toolchain "$w"); tmuxfb=$(make_liveness_tmux "$w")
+  log="$w/calls.log"; : > "$log"
+
+  out=$(run_bootstrap "$tmuxfb:$fb" "$w/home" zsh "$log")
+
+  assert_not_contains "$out" "unverified for recovery" \
+    "a codebuddy secondmate is secondmate-capable, so its dead endpoint must not be downgraded to an unverified harness"
+  assert_contains "$(cat "$log")" "new-window" \
+    "a confirmed-dead codebuddy secondmate should actually be relaunched"
+  pass "sweep: a confirmed-dead codebuddy secondmate endpoint is respawned like the other secondmate-capable harnesses"
+}
+
 test_sweep_leaves_alive_secondmate_untouched() {
   local w fb tmuxfb log out
   w=$(new_world sweep-alive)
@@ -545,6 +561,7 @@ test_tmux_agent_state_rejects_malformed_targets_before_probe
 test_herdr_agent_state_preserves_husk_classifier
 test_agent_state_dispatcher_and_compatibility
 test_sweep_respawns_confirmed_dead_secondmate
+test_sweep_respawns_confirmed_dead_codebuddy_secondmate
 test_sweep_leaves_alive_secondmate_untouched
 test_sweep_respawns_authoritatively_missing_pi_secondmate
 test_sweep_respawns_authoritatively_missing_pi_signed_secondmate

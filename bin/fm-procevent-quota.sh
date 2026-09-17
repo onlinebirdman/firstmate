@@ -9,14 +9,14 @@
 #   fm-procevent-quota.sh source-id
 #   fm-procevent-quota.sh retire [--provider <provider>]
 #
-# arm        Register a recurring quota-axi --json poll that wakes firstmate
-#            when the tracked provider's effectivePercentRemaining drops below
+# arm        Register a recurring quota poll that wakes firstmate when the
+#            tracked provider's effectivePercentRemaining drops below
 #            <threshold> (default 10%) or when its runway.status becomes
 #            exhausted_now. The condition is deterministic, the action is only
 #            the durable `check: procevent:quota:<seq>` wake, and the watch is
 #            registered through `bin/fm-procevent.sh register`.
 # poll       The blocking child the generic runner executes; never run this
-#            directly in a conversational turn. It polls `quota-axi --json`
+#            directly in a conversational turn. It polls the tracked provider
 #            until quota drops below the threshold or an error stops the watch.
 # classify   Print the captured outcome class: low, exhausted, error, or unknown.
 # terminal   Every quota poll is terminal because the source fires at most once.
@@ -27,6 +27,13 @@
 # The canonical source id is `quota` for the aggregate tracked provider.
 # A provider named with --provider sets the tracked provider and the source id
 # becomes `quota-<provider>`.
+#
+# The provider selects the polled source: every provider except `codebuddy` is
+# read from `quota-axi --json`, while `codebuddy` - a surface quota-axi does not
+# model - is read from bin/fm-codebuddy-usage.sh and requires `opencli` instead
+# of the quota-axi version floor. A codebuddy watch must measure: an absent
+# `opencli` or an unmeasurable account is an error, never a silently healthy
+# loop that can never fire.
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -93,10 +100,29 @@ valid_percent() {
 }
 
 # quota_json [timeout]
-# Run `quota-axi --json` bounded by the given timeout. A missing or incompatible
-# quota-axi is an error condition, not a signal to fire.
+# Produce the quota snapshot the tracked provider is read from, bounded by the
+# given timeout. A missing or incompatible source is an error condition, not a
+# signal to fire.
+#
+# The tracked provider selects the source. `codebuddy` is a surface quota-axi
+# does not model, so it is read from bin/fm-codebuddy-usage.sh (opencli-backed);
+# every other provider is read from `quota-axi --json`.
 quota_json() {
   local timeout=${1:-} output
+  if [ "$PROVIDER" = codebuddy ]; then
+    command -v opencli >/dev/null 2>&1 || return 2
+    if [ -n "$timeout" ]; then
+      output=$(fm_run_timed "$timeout" "$SCRIPT_DIR/fm-codebuddy-usage.sh" quota 2>/dev/null </dev/null) || return 2
+    else
+      output=$("$SCRIPT_DIR/fm-codebuddy-usage.sh" quota 2>/dev/null </dev/null) || return 2
+    fi
+    # A watch must never idle on a surface it cannot measure: an unmeasurable
+    # codebuddy account (unknown semantics) is an error, not a silent healthy
+    # loop, so the emitted fragment must carry known semantics to arm/poll.
+    printf '%s\n' "$output" | jq -e '.providers[0].quotaSemantics.status == "known"' >/dev/null 2>&1 || return 2
+    printf '%s\n' "$output"
+    return 0
+  fi
   if [ -n "$timeout" ]; then
     fm_quota_axi_compatible "$timeout" >/dev/null 2>&1 || return 2
     output=$(fm_run_timed "$timeout" quota-axi --json 2>/dev/null </dev/null) || return 2
@@ -188,7 +214,11 @@ cmd_arm() {
     esac
   done
   resolve_provider "$PROVIDER"
-  fm_quota_axi_compatible 5 >/dev/null 2>&1 || die "quota-axi is missing or below the compatibility floor"
+  if [ "$PROVIDER" = codebuddy ]; then
+    command -v opencli >/dev/null 2>&1 || die "opencli is required to track codebuddy quota"
+  else
+    fm_quota_axi_compatible 5 >/dev/null 2>&1 || die "quota-axi is missing or below the compatibility floor"
+  fi
   local timeout
   timeout=$(perl -e 'print int($ARGV[0] * 0.8 + 0.5)' "$interval") || timeout=30
   [ "$timeout" -ge 5 ] || timeout=5
@@ -224,7 +254,11 @@ cmd_poll() {
     if ! json=$(quota_json "${timeout:-}"); then
       printf 'quota: %s\n' "$CANONICAL_SOURCE_ID"
       printf 'status: error\n'
-      printf 'detail: quota-axi --json failed or quota-axi is missing/incompatible\n'
+      if [ "$PROVIDER" = codebuddy ]; then
+        printf 'detail: opencli is missing or the codebuddy usage read failed\n'
+      else
+        printf 'detail: quota-axi --json failed or quota-axi is missing/incompatible\n'
+      fi
       printf 'condition_polls: %s\n' "$polls"
       exit 0
     fi

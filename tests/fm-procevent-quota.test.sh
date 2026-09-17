@@ -222,4 +222,47 @@ printf '%s\n' "$out" | grep -qx 'status: exhausted' || fail "known semantics wit
 printf '%s\n' "$out" | grep -qx 'condition_polls: 2' || fail "known semantics with unknown headroom stopped early"
 ok "poll preserves unknown headroom under known semantics"
 
+# --- codebuddy: a surface quota-axi does not model ---------------------------
+#
+# A codebuddy watch reads bin/fm-codebuddy-usage.sh (opencli-backed) instead of
+# quota-axi, so the same classification runs over the codebuddy fragment.
+cat > "$FAKEBIN/opencli" <<'SH'
+#!/usr/bin/env bash
+if [ "${FM_FAKE_OPENCLI_FAIL:-0}" = 1 ]; then exit 1; fi
+sub=
+for a in "$@"; do
+  case "$a" in accounts|usage|current) sub=$a ;; esac
+done
+case "$sub" in
+  accounts) printf '%s\n' '[{"alias":"a1","nickname":"n","uin":"1","subscription":"p","planRemain":3,"bonusRemain":0,"totalRemain":3,"nextExpiry":"2030-01-01 00:00:00","expiringCredits":0,"cycleEnd":"2030-01-31 00:00:00","status":"ok","error":""}]' ;;
+  usage)    printf '%s\n' '[{"alias":"a1","category":"plan","packageName":"p","total":100,"remain":3,"unit":"credits","usagePct":97,"expiresAt":"2030-01-31 00:00:00","cycleEnd":"2030-01-31 00:00:00","status":"ok"}]' ;;
+  current)  printf '%s\n' '[{"alias":"a1","matched":true}]' ;;
+esac
+SH
+chmod +x "$FAKEBIN/opencli"
+
+out=$("$BIN/fm-procevent-quota.sh" source-id codebuddy)
+[ "$out" = "quota-codebuddy" ] || fail "codebuddy source id should be quota-codebuddy, got '$out'"
+ok "codebuddy provider resolves its own source id"
+
+out=$(PATH="$FAKEBIN:$PATH" "$BIN/fm-procevent-quota.sh" poll --interval 0.01 --threshold 10 --provider codebuddy --timeout 1)
+printf '%s\n' "$out" | grep -qx 'quota: quota-codebuddy' || fail "codebuddy poll did not report its source id: $out"
+printf '%s\n' "$out" | grep -qx 'status: low' || fail "low codebuddy credits did not fire the watch: $out"
+ok "codebuddy poll reads the opencli-backed fragment and fires below the threshold"
+
+if err=$(PATH=/usr/bin:/bin:/usr/sbin:/sbin "$BIN/fm-procevent-quota.sh" arm --provider codebuddy 2>&1); then
+  fail "codebuddy arm unexpectedly succeeded without opencli"
+fi
+case "$err" in
+  *"opencli is required to track codebuddy quota"*) : ;;
+  *) fail "codebuddy arm refusal wording changed: $err" ;;
+esac
+ok "codebuddy arm refuses to arm without opencli"
+
+out=$(FM_FAKE_OPENCLI_FAIL=1 PATH="$FAKEBIN:$PATH" "$BIN/fm-procevent-quota.sh" poll --interval 1 --threshold 10 --provider codebuddy --timeout 1)
+printf '%s\n' "$out" | grep -qx 'status: error' || fail "a failed codebuddy read must be status:error: $out"
+printf '%s\n' "$out" | grep -Fq 'opencli is missing or the codebuddy usage read failed' \
+  || fail "codebuddy error detail must name opencli, not quota-axi: $out"
+ok "a failed codebuddy read reports an opencli-specific error"
+
 printf '# all fm-procevent-quota tests passed\n'

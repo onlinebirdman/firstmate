@@ -1,6 +1,12 @@
 # shellcheck shell=bash
-# Shared quota-axi compatibility floor for the bootstrap diagnostic.
+# Shared quota-axi compatibility floor, quota snapshot schema validation, and
+# snapshot composition for firstmate's quota consumers.
 # Usage: . bin/fm-quota-axi-lib.sh
+#
+# Exposed API:
+#   fm_quota_axi_compatible [timeout]   version-floor check for the bootstrap
+#   fm_quota_json_valid                 validate a schemaVersion 5 snapshot
+#   fm_quota_json_compose <a> <b>       union two schemaVersion 5 snapshots
 #
 # FM_QUOTA_AXI_MIN follows the axi-family floor policy owned beside the floor
 # constants in bin/fm-bootstrap.sh.
@@ -8,6 +14,13 @@
 # This file is the single owner of that version number. bin/fm-bootstrap.sh
 # turns a failing check into the operator-facing MISSING diagnostic, which is
 # what keeps an older build from reaching a dispatch intake at all.
+#
+# fm_quota_json_compose exists because a surface quota-axi does not model -
+# currently CodeBuddy, whose credits come from bin/fm-codebuddy-usage.sh - must
+# join the same snapshot the agent and helper already reason over, rather than
+# each consumer re-implementing its own merge. It owns no provider relations and
+# refuses a duplicate provider name so a companion row can never silently shadow
+# the primary one.
 
 FM_QUOTA_AXI_MIN=0.1.29
 
@@ -90,4 +103,23 @@ fm_quota_json_valid() {
     )
     )
   ' >/dev/null 2>&1
+}
+
+# fm_quota_json_compose <primary-json> <extra-json>
+# Union the `providers` arrays of two schemaVersion 5 documents into one
+# document. A provider name appearing in both is a hard error: the caller must
+# decide which row wins rather than have a companion silently shadow a primary
+# provider. The composed document is not validated here; callers run
+# fm_quota_json_valid on the result.
+fm_quota_json_compose() {
+  local primary=${1-} extra=${2-}
+  jq -cn --argjson a "$primary" --argjson b "$extra" '
+    (($a.providers // []) + ($b.providers // [])) as $all |
+    if ([$all[].provider] | length) != ([$all[].provider] | unique | length) then
+      error("duplicate provider in composed quota snapshot: " +
+            ([$all[].provider] | group_by(.) | map(select(length > 1) | .[0]) | join(", ")))
+    else
+      {schemaVersion: 5, providers: $all}
+    end
+  '
 }

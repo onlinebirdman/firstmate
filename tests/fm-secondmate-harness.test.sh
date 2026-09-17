@@ -702,6 +702,46 @@ spawn_secondmate_capture() {
     "$ROOT/bin/fm-spawn.sh" "$id" "$home" "$@" --secondmate
 }
 
+# codebuddy's secondmate boundary opened on 2026-09-15, once its primary
+# supervision path was live-verified: the tracked .codebuddy/settings.json
+# registers the Claude-family Stop pair, a codebuddy session can hold
+# state/.lock, and a Stop boundary armed a real watcher whose exit-2 rewake
+# reached the session. That is exactly the "can this secondmate arm a watch
+# cycle" test the refusal guard exists for, so the guard must not swallow
+# codebuddy again. The remaining unverified codebuddy facts are worker-side
+# (busy-state signature, composer, interrupt) and govern codebuddy CREWMATES,
+# not a codebuddy secondmate's own supervision.
+test_spawn_codebuddy_secondmate_launches_with_its_primary_contract() {
+  local w sm fakebin launchlog launch meta rc
+  w="$TMP_ROOT/spawn-codebuddy-secondmate"
+  sm="$w/sm"
+  launchlog="$w/launch.log"
+  mkdir -p "$w/home/config" "$w/home/state" "$w/home/data" "$w/home/projects"
+  printf 'codebuddy\n' > "$w/home/config/secondmate-harness"
+  make_seeded_home "$sm" sm
+  fakebin=$(make_launch_capturing_tmux "$w/tmux")
+  : > "$launchlog"
+  rc=0
+  PATH="$fakebin:$BASE_PATH" TMUX='' CLAUDECODE=1 \
+    FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$w/home" HOME="$w/home/user-home" CLAUDE_CONFIG_DIR='' \
+    FM_STATE_OVERRIDE="$w/home/state" FM_DATA_OVERRIDE="$w/home/data" \
+    FM_PROJECTS_OVERRIDE="$w/home/projects" FM_CONFIG_OVERRIDE="$w/home/config" \
+    FM_SPAWN_NO_GUARD=1 FM_FAKE_LAUNCH_LOG="$launchlog" FM_FAKE_PANE_PATH="$sm" \
+    "$ROOT/bin/fm-spawn.sh" sm "$sm" --secondmate >/dev/null 2>"$w/err" || rc=$?
+
+  [ "$rc" -eq 0 ] \
+    || fail "codebuddy must be accepted for secondmates since its primary supervision path was verified; spawn exited $rc: $(cat "$w/err")"
+  meta="$w/home/state/sm.meta"
+  [ "$(meta_field "$meta" harness)" = codebuddy ] || fail "a codebuddy secondmate must record its own harness"
+  [ "$(meta_field "$meta" kind)" = secondmate ] || fail "a codebuddy secondmate must record kind=secondmate"
+  launch=$(cat "$launchlog")
+  assert_contains "$launch" "--permission-mode bypassPermissions" \
+    "a codebuddy secondmate must launch with the full unattended bypass, not the -y shorthand that still asks on HIGH/CRITICAL"
+  assert_contains "$launch" "FM_SUPERVISION_MODEL=autoarm" \
+    "codebuddy's Stop auto-arm runs the watcher only between turns, so its home must inherit the autoarm model"
+  pass "codebuddy is accepted for secondmates and launches on its Claude-family supervision model"
+}
+
 test_spawn_backend_precedence_over_inherited_config() {
   local w sm meta launchlog out status
   w="$TMP_ROOT/spawn-backend-env-precedence"
@@ -2640,6 +2680,7 @@ test_spawn_bare_backward_compat
 test_spawn_explicit_harness_wins
 test_spawn_unverified_secondmate_harness_refused
 test_spawn_cursor_secondmate_launches_with_its_primary_contract
+test_spawn_codebuddy_secondmate_launches_with_its_primary_contract
 test_spawn_backend_precedence_over_inherited_config
 test_spawn_explicit_backend_precedence_over_env_and_inherited_config
 test_spawn_bare_harness_no_model_effort_flag

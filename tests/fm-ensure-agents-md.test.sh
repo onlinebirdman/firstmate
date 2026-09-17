@@ -19,9 +19,28 @@ assert_claude_pointer() {
 EOF
 }
 
+# Public contract: CODEBUDDY.md is the same two-line pointer for CodeBuddy Code.
+assert_codebuddy_pointer() {
+  local path=$1
+  [ -e "$path" ] || fail "CODEBUDDY.md is missing"
+  [ ! -L "$path" ] || fail "CODEBUDDY.md is a symlink; expected a real @AGENTS.md pointer file"
+  [ -f "$path" ] || fail "CODEBUDDY.md is not a regular file"
+  cmp -s "$path" - <<'EOF' || fail "CODEBUDDY.md is not the canonical @AGENTS.md pointer"
+<!-- Points CodeBuddy at AGENTS.md via import; edit AGENTS.md, not this file. -->
+@AGENTS.md
+EOF
+}
+
 write_fixture_claude_pointer() {
   cat > "$1/CLAUDE.md" <<'EOF'
 <!-- Points Claude at AGENTS.md via import; edit AGENTS.md, not this file. -->
+@AGENTS.md
+EOF
+}
+
+write_fixture_codebuddy_pointer() {
+  cat > "$1/CODEBUDDY.md" <<'EOF'
+<!-- Points CodeBuddy at AGENTS.md via import; edit AGENTS.md, not this file. -->
 @AGENTS.md
 EOF
 }
@@ -34,6 +53,7 @@ test_created_agents_md_includes_self_governance() {
   agents="$repo/AGENTS.md"
   assert_present "$agents" "AGENTS.md was not created"
   assert_claude_pointer "$repo/CLAUDE.md"
+  assert_codebuddy_pointer "$repo/CODEBUDDY.md"
   assert_grep "## Maintaining this file" "$agents" "self-governance section heading missing"
   assert_grep "Keep this file for knowledge useful to almost every future agent session in this project." "$agents" \
     "self-governance section lost the future-session bar"
@@ -54,6 +74,7 @@ test_fresh_setup_writes_real_claude_pointer() {
     || fail "fm-ensure-agents-md.sh failed creating a fresh pointer"
   assert_contains "$out" "created:" "fresh setup did not report created"
   assert_claude_pointer "$repo/CLAUDE.md"
+  assert_codebuddy_pointer "$repo/CODEBUDDY.md"
   [ ! -L "$repo/CLAUDE.md" ] || fail "fresh setup created a CLAUDE.md symlink"
   pass "fm-ensure-agents-md.sh: fresh setup writes a real @AGENTS.md pointer"
 }
@@ -266,9 +287,11 @@ test_existing_crlf_agents_md_with_section_stays_unchanged() {
     'Prefer rewriting or pruning existing entries over appending new ones.' \
     'When updating this file, preserve this bar for all agents and keep entries concise.' > "$repo/AGENTS.md"
   write_fixture_claude_pointer "$repo"
+  write_fixture_codebuddy_pointer "$repo"
   agents="$repo/AGENTS.md"
   cp "$agents" "$repo/.before"
   cp "$repo/CLAUDE.md" "$repo/.claude-before"
+  cp "$repo/CODEBUDDY.md" "$repo/.codebuddy-before"
   out=$("$ROOT/bin/fm-ensure-agents-md.sh" "$repo" 2>&1) \
     || fail "fm-ensure-agents-md.sh failed on CRLF AGENTS.md with the section"
   assert_contains "$out" "unchanged:" "complete CRLF AGENTS.md was not reported unchanged"
@@ -276,6 +299,8 @@ test_existing_crlf_agents_md_with_section_stays_unchanged() {
     || fail "complete CRLF AGENTS.md was modified"
   cmp -s "$repo/.claude-before" "$repo/CLAUDE.md" \
     || fail "complete CRLF project's CLAUDE.md was modified"
+  cmp -s "$repo/.codebuddy-before" "$repo/CODEBUDDY.md" \
+    || fail "complete CRLF project's CODEBUDDY.md was modified"
   count=$(LC_ALL=C grep -a -c '## Maintaining this file' "$agents")
   [ "$count" -eq 1 ] || fail "complete CRLF AGENTS.md has $count self-governance sections"
   pass "fm-ensure-agents-md.sh: CRLF AGENTS.md with the section stays unchanged"
@@ -325,10 +350,12 @@ test_canonical_pointer_is_accepted_when_both_are_real_files() {
   mkdir -p "$repo"
   printf '# Existing agent memory\n\n## Maintaining this file\n\nKeep this file for knowledge useful to almost every future agent session in this project.\nDo not repeat what the codebase already shows; point to the authoritative file or command instead.\nPrefer rewriting or pruning existing entries over appending new ones.\nWhen updating this file, preserve this bar for all agents and keep entries concise.\n' > "$repo/AGENTS.md"
   write_fixture_claude_pointer "$repo"
+  write_fixture_codebuddy_pointer "$repo"
   out=$("$ROOT/bin/fm-ensure-agents-md.sh" "$repo" 2>&1) \
     || fail "fm-ensure-agents-md.sh refused a canonical real CLAUDE.md pointer"
   assert_contains "$out" "unchanged:" "canonical pointer plus AGENTS.md was not reported unchanged"
   assert_claude_pointer "$repo/CLAUDE.md"
+  assert_codebuddy_pointer "$repo/CODEBUDDY.md"
   pass "fm-ensure-agents-md.sh: canonical real CLAUDE.md pointer is not a conflict"
 }
 
@@ -415,6 +442,105 @@ test_lowercase_agents_md_refuses_case_fragile_pointer() {
   pass "fm-ensure-agents-md.sh: refuses a case-variant lowercase agents.md (issue #389)"
 }
 
+test_codebuddy_symlink_migrates_to_pointer() {
+  local repo out
+  repo="$TMP_ROOT/codebuddy-symlink-project"
+  mkdir -p "$repo"
+  printf '# Agents memory\n\n## Maintaining this file\n\nKeep this file for knowledge useful to almost every future agent session in this project.\nDo not repeat what the codebase already shows; point to the authoritative file or command instead.\nPrefer rewriting or pruning existing entries over appending new ones.\nWhen updating this file, preserve this bar for all agents and keep entries concise.\n' > "$repo/AGENTS.md"
+  ln -s AGENTS.md "$repo/CODEBUDDY.md"
+  out=$("$ROOT/bin/fm-ensure-agents-md.sh" "$repo" 2>&1) \
+    || fail "fm-ensure-agents-md.sh failed migrating a CODEBUDDY.md symlink"
+  assert_contains "$out" "updated:" "CODEBUDDY.md symlink migration did not report an update"
+  assert_codebuddy_pointer "$repo/CODEBUDDY.md"
+  assert_claude_pointer "$repo/CLAUDE.md"
+  pass "fm-ensure-agents-md.sh: migrates a CODEBUDDY.md symlink to the pointer"
+}
+
+test_codebuddy_wrong_target_symlink_is_refused() {
+  local repo out rc
+  repo="$TMP_ROOT/codebuddy-wrong-target-project"
+  mkdir -p "$repo"
+  printf '# Agents memory\n' > "$repo/AGENTS.md"
+  printf '# other\n' > "$repo/OTHER.md"
+  ln -s OTHER.md "$repo/CODEBUDDY.md"
+  out=$("$ROOT/bin/fm-ensure-agents-md.sh" "$repo" 2>&1)
+  rc=$?
+  [ "$rc" -ne 0 ] || fail "expected a non-zero exit for a CODEBUDDY.md symlink that does not point to AGENTS.md"
+  assert_contains "$out" "conflict:" "wrong-target CODEBUDDY.md symlink did not report a conflict"
+  [ -L "$repo/CODEBUDDY.md" ] || fail "wrong-target refusal removed the CODEBUDDY.md symlink"
+  assert_absent "$repo/CLAUDE.md" "a CODEBUDDY.md refusal still wrote a CLAUDE.md pointer"
+  pass "fm-ensure-agents-md.sh: refuses a CODEBUDDY.md symlink that does not point to AGENTS.md"
+}
+
+test_non_regular_codebuddy_md_is_refused() {
+  local repo out rc
+  repo="$TMP_ROOT/non-regular-codebuddy-project"
+  mkdir -p "$repo" "$repo/CODEBUDDY.md"
+  printf '# Agents memory\n' > "$repo/AGENTS.md"
+  out=$("$ROOT/bin/fm-ensure-agents-md.sh" "$repo" 2>&1)
+  rc=$?
+  [ "$rc" -ne 0 ] || fail "expected a non-zero exit when CODEBUDDY.md is a directory"
+  assert_contains "$out" "conflict:" "non-regular CODEBUDDY.md did not report a conflict"
+  assert_absent "$repo/CLAUDE.md" "a non-regular CODEBUDDY.md refusal still wrote a CLAUDE.md pointer"
+  pass "fm-ensure-agents-md.sh: refuses a non-regular CODEBUDDY.md"
+}
+
+test_distinct_real_codebuddy_is_refused() {
+  local repo out rc
+  repo="$TMP_ROOT/distinct-real-codebuddy-project"
+  mkdir -p "$repo"
+  printf '# Agents memory\n' > "$repo/AGENTS.md"
+  printf '# CodeBuddy memory\n' > "$repo/CODEBUDDY.md"
+  cp "$repo/CODEBUDDY.md" "$repo/.codebuddy-before"
+  out=$("$ROOT/bin/fm-ensure-agents-md.sh" "$repo" 2>&1)
+  rc=$?
+  [ "$rc" -ne 0 ] || fail "expected a non-zero exit for distinct real AGENTS.md and CODEBUDDY.md"
+  assert_contains "$out" "conflict:" "distinct real CODEBUDDY.md did not report a conflict"
+  cmp -s "$repo/.codebuddy-before" "$repo/CODEBUDDY.md" \
+    || fail "distinct-real-files refusal modified CODEBUDDY.md"
+  assert_absent "$repo/CLAUDE.md" "a distinct real CODEBUDDY.md refusal still wrote a CLAUDE.md pointer"
+  pass "fm-ensure-agents-md.sh: refuses a distinct real CODEBUDDY.md"
+}
+
+test_two_distinct_real_pointers_without_agents_md_are_refused() {
+  local repo out rc
+  repo="$TMP_ROOT/two-real-pointers-no-agents-project"
+  mkdir -p "$repo"
+  printf '# Claude memory\n' > "$repo/CLAUDE.md"
+  printf '# CodeBuddy memory\n' > "$repo/CODEBUDDY.md"
+  cp "$repo/CLAUDE.md" "$repo/.claude-before"
+  cp "$repo/CODEBUDDY.md" "$repo/.codebuddy-before"
+  out=$("$ROOT/bin/fm-ensure-agents-md.sh" "$repo" 2>&1)
+  rc=$?
+  [ "$rc" -ne 0 ] || fail "expected a non-zero exit for two distinct real pointers with no AGENTS.md, got: $out"
+  assert_contains "$out" "conflict:" "two distinct real pointers did not report a conflict"
+  assert_absent "$repo/AGENTS.md" "a refused two-pointer project still gained an AGENTS.md"
+  cmp -s "$repo/.claude-before" "$repo/CLAUDE.md" \
+    || fail "two-pointer refusal modified CLAUDE.md"
+  cmp -s "$repo/.codebuddy-before" "$repo/CODEBUDDY.md" \
+    || fail "two-pointer refusal modified CODEBUDDY.md"
+  pass "fm-ensure-agents-md.sh: refuses two distinct real pointer files with no AGENTS.md"
+}
+
+test_promotion_from_codebuddy_memory() {
+  local repo agents
+  repo="$TMP_ROOT/codebuddy-only-project"
+  mkdir -p "$repo"
+  cat > "$repo/CODEBUDDY.md" <<'EOF'
+# Existing CodeBuddy memory
+
+Run tests with `make test`.
+EOF
+  "$ROOT/bin/fm-ensure-agents-md.sh" "$repo" >/dev/null 2>&1 \
+    || fail "fm-ensure-agents-md.sh failed promoting a lone CODEBUDDY.md memory file"
+  agents="$repo/AGENTS.md"
+  assert_present "$agents" "AGENTS.md was not created during CODEBUDDY.md promotion"
+  assert_grep "Run tests with \`make test\`." "$agents" "promotion lost existing CODEBUDDY.md content"
+  assert_claude_pointer "$repo/CLAUDE.md"
+  assert_codebuddy_pointer "$repo/CODEBUDDY.md"
+  pass "fm-ensure-agents-md.sh: promotes a lone CODEBUDDY.md memory file into AGENTS.md"
+}
+
 test_created_agents_md_includes_self_governance
 test_fresh_setup_writes_real_claude_pointer
 test_promoted_claude_md_includes_self_governance
@@ -433,3 +559,9 @@ test_agents_md_symlink_is_refused
 test_wrong_target_symlink_is_refused
 test_non_regular_claude_md_is_refused
 test_lowercase_agents_md_refuses_case_fragile_pointer
+test_codebuddy_symlink_migrates_to_pointer
+test_codebuddy_wrong_target_symlink_is_refused
+test_non_regular_codebuddy_md_is_refused
+test_distinct_real_codebuddy_is_refused
+test_two_distinct_real_pointers_without_agents_md_are_refused
+test_promotion_from_codebuddy_memory
