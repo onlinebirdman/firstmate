@@ -1,0 +1,20 @@
+# scenario 1: lone real CODEBUDDY.md memory, no AGENTS.md -> promoted (must not be a silent no-op)
+promoted: moved CODEBUDDY.md to AGENTS.md and wrote CLAUDE.md CODEBUDDY.md @AGENTS.md pointers in /private/var/folders/8h/1kxqwwb129x_9bn1nsyhxxc40000gn/T/fm-md.NVtRP9/fresh
+exit=0
+AGENTS.md head:
+# CodeBuddy memory
+
+run make test
+CLAUDE.md contents:
+<!-- Points Claude at AGENTS.md via import; edit AGENTS.md, not this file. -->
+@AGENTS.md
+CODEBUDDY.md contents:
+<!-- Points CodeBuddy at AGENTS.md via import; edit AGENTS.md, not this file. -->
+@AGENTS.md
+
+# scenario 2 (adversarial, review-fixed): AGENTS.md absent, TWO distinct real pointers -> must conflict, not silently promote one
+conflict: distinct real memory files CLAUDE.md, CODEBUDDY.md exist in /private/var/folders/8h/1kxqwwb129x_9bn1nsyhxxc40000gn/T/fm-md.NVtRP9/two with no AGENTS.md; reconcile them manually
+exit=1
+AGENTS.md present? no
+CLAUDE.md intact? YES
+CODEBUDDY.md intact? YES

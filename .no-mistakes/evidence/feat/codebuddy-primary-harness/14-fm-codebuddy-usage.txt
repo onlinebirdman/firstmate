@@ -1,0 +1,6 @@
+ok - quota emits a valid codebuddy fragment with the account's own numbers and performs no write
+ok - zero credits read as exhausted_now and the fragment still validates
+ok - absent opencli is a valid status:unknown fragment, never a fabricated number
+ok - an unmatched current account is disclosed uncertainty, not a guess
+ok - show renders the account library, marks the current account, and performs no write
+ok - usage errors exit 2

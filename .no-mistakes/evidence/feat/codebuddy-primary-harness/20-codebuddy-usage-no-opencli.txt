@@ -1,0 +1,8 @@
+# Adversarial: machine quota path with opencli absent must disclose uncertainty and exit 0, never fabricate a number.
+$ PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin bin/fm-codebuddy-usage.sh quota
+{"schemaVersion":5,"providers":[{"provider":"codebuddy","quotaSemantics":{"status":"unknown","effectiveAvailability":[]}}]}
+exit=0
+
+$ PATH=<same> bin/fm-codebuddy-usage.sh show   (nothing to render -> exit 1)
+fm-codebuddy-usage: opencli not found on PATH
+exit=1

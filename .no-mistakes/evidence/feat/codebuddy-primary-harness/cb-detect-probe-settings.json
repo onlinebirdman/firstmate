@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && { bin/fm-harness.sh; printf 'model='; bash -c '. bin/fm-wake-lib.sh; fm_supervision_model'; } > /Users/huangjiepeng/.no-mistakes/evidence/01M2PTJVK1S5252PMZQN8P1NH2/07-codebuddy-detect-observed.txt 2>&1; printf 'FM-CODEBUDDY-DETECT-PROBE'",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

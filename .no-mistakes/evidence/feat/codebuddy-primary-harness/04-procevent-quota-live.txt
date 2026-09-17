@@ -1,0 +1,14 @@
+$ bin/fm-procevent-quota.sh source-id codebuddy
+quota-codebuddy
+exit=0
+
+$ bin/fm-procevent-quota.sh poll --interval 1 --threshold 95 --provider codebuddy --timeout 10   (real 76% < 95 => low fires)
+quota: quota-codebuddy
+status: low
+detail: {"provider":"codebuddy","best":{"scope":"all_products","status":"known","effectivePercentRemaining":76.19,"runway":{"status":"through_reset"},"resetsAt":"2026-09-30 23:59:59","limitedBy":"credits"}}
+condition_polls: 1
+exit=0
+
+$ PATH without opencli: bin/fm-procevent-quota.sh arm --provider codebuddy
+error: opencli is required to track codebuddy quota
+exit=1

@@ -1,0 +1,206 @@
+{
+  "generatedAt": "2026-09-17T06:14:04.317Z",
+  "schemaVersion": 5,
+  "providers": [
+    {
+      "provider": "claude",
+      "windows": [],
+      "state": {
+        "status": "error",
+        "stale": false,
+        "error": "keychain_presence_check_failed"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      }
+    },
+    {
+      "provider": "codex",
+      "windows": [],
+      "state": {
+        "status": "error",
+        "stale": false,
+        "error": "fetch failed"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      }
+    },
+    {
+      "provider": "cursor",
+      "plan": "Free",
+      "windows": [
+        {
+          "id": "included_usage",
+          "label": "included usage",
+          "kind": "monthly",
+          "resetsAt": "2026-09-19T02:26:54.475Z",
+          "percentRemaining": 100,
+          "pace": {
+            "status": "behind",
+            "reservePercentPoints": 94.0573,
+            "burnMultiple": 0
+          }
+        },
+        {
+          "id": "auto_usage",
+          "label": "auto usage",
+          "kind": "monthly",
+          "resetsAt": "2026-09-19T02:26:54.475Z",
+          "percentRemaining": 100,
+          "pace": {
+            "status": "behind",
+            "reservePercentPoints": 94.0573,
+            "burnMultiple": 0
+          }
+        },
+        {
+          "id": "api_usage",
+          "label": "API usage",
+          "kind": "monthly",
+          "resetsAt": "2026-09-19T02:26:54.475Z",
+          "percentRemaining": 100,
+          "pace": {
+            "status": "behind",
+            "reservePercentPoints": 94.0573,
+            "burnMultiple": 0
+          }
+        }
+      ],
+      "state": {
+        "status": "fresh",
+        "stale": false
+      },
+      "quotaSemantics": {
+        "status": "known",
+        "effectiveAvailability": [
+          {
+            "scope": "all_models",
+            "status": "known",
+            "effectivePercentRemaining": 100,
+            "boundedBy": [
+              "included_usage",
+              "auto_usage",
+              "api_usage"
+            ],
+            "limitingWindowIds": [
+              "included_usage",
+              "auto_usage",
+              "api_usage"
+            ],
+            "pace": {
+              "status": "behind",
+              "worstReservePercentPoints": 94.0573,
+              "worstReserveWindowId": "included_usage"
+            },
+            "runway": {
+              "status": "through_reset",
+              "projectionConfidence": "established"
+            },
+            "selection": {
+              "status": "known",
+              "spendPriority": 16.8274
+            }
+          }
+        ]
+      }
+    },
+    {
+      "provider": "copilot",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "GitHub Copilot sign-in required"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": [],
+        "unresolvedWindowIds": []
+      }
+    },
+    {
+      "provider": "grok",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "Grok sign-in required",
+        "authStatus": "unusable"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      }
+    },
+    {
+      "provider": "kimi",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "kimi_credential_unavailable"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      }
+    },
+    {
+      "provider": "zai",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "zai_credential_unavailable"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      }
+    },
+    {
+      "provider": "agy",
+      "windows": [],
+      "state": {
+        "status": "unavailable",
+        "stale": false,
+        "error": "Antigravity/agy is not running"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": [],
+        "unresolvedWindowIds": []
+      }
+    },
+    {
+      "provider": "alibaba",
+      "windows": [],
+      "state": {
+        "status": "unavailable",
+        "stale": false,
+        "error": "bl_cli_unavailable"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      }
+    },
+    {
+      "provider": "opencode-go",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "provider_auth_rejected"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": [],
+        "unresolvedWindowIds": []
+      }
+    }
+  ]
+}

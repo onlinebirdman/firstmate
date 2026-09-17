@@ -1,0 +1,33 @@
+$ bin/fm-codebuddy-usage.sh quota
+{
+  "schemaVersion": 5,
+  "providers": [
+    {
+      "provider": "codebuddy",
+      "quotaSemantics": {
+        "status": "known",
+        "effectiveAvailability": [
+          {
+            "scope": "all_products",
+            "status": "known",
+            "effectivePercentRemaining": 76.29,
+            "runway": {
+              "status": "through_reset"
+            },
+            "resetsAt": "2026-09-30 23:59:59",
+            "limitedBy": "credits"
+          }
+        ]
+      }
+    }
+  ]
+}
+exit=0
+
+$ bin/fm-codebuddy-usage.sh show --json
+{
+  "current": "untrxps4",
+  "currentMatched": true,
+  "accounts": 5,
+  "plans": 8
+}

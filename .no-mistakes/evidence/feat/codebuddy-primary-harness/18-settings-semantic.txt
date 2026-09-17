@@ -1,0 +1,10 @@
+# Semantic check of the tracked .codebuddy/settings.json: parse it as JSON, resolve each hook command's target script, and require it to be an executable file in this checkout.
+OK   SessionStart -> ./bin/fm-sessionstart-run.sh (executable)
+OK   PreToolUse -> ./bin/fm-arm-pretool-check.sh (executable)
+OK   PreToolUse -> ./bin/fm-cd-pretool-check.sh (executable)
+OK   PreToolUse -> ./bin/fm-subagent-pretool-check.sh (executable)
+OK   Stop -> ./bin/fm-turnend-guard.sh (executable)
+OK   Stop -> ./bin/fm-claude-stop-autoarm.sh (executable)
+
+# The real fragment the quota path consumes matches the skill's documented contract:
+OK   real fragment matches the documented all_products/known contract

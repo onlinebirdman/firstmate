@@ -1,0 +1,26 @@
+# isolated FM_HOME=/var/folders/8h/1kxqwwb129x_9bn1nsyhxxc40000gn/T//fm-cb-arm.eZEhly
+$ FM_HOME=$TMP FM_STATE_OVERRIDE=$TMP/state bin/fm-procevent-quota.sh arm --provider codebuddy --interval 60 --threshold 20
+registered: quota-codebuddy (quota)
+armed: quota-codebuddy
+provider: codebuddy
+threshold: 20%
+interval: 60s
+exit=0
+
+$ ls -R $TMP/state (registered procevents)
+$TMP/state/procevent/.owner-lease
+$TMP/state/procevent/quota-codebuddy.source
+$ cat $TMP/state/procevent/quota-codebuddy.source
+adapter=quota
+argc=10
+argv:
+/Users/huangjiepeng/.no-mistakes/worktrees/37eaa95f14e7/01M2PTJVK1S5252PMZQN8P1NH2/bin/fm-procevent-quota.sh
+poll
+--interval
+60
+--threshold
+20
+--provider
+codebuddy
+--timeout
+48

@@ -1,0 +1,23 @@
+ok - help renders only the complete header
+ok - poll accepts its documented defaults
+ok - provider watch blocks until a model scope is exhausted
+ok - exhausted poll records the triggering scope
+ok - poll detects exhausted runway under unknown headroom
+ok - aggregate watch blocks until any scope is exhausted
+ok - aggregate watch preserves empty quota uncertainty
+ok - arm rejects a missing provider value
+ok - arm rejects noncanonical provider identities
+ok - provider retire resolves the armed source id
+ok - poll rejects a decimal threshold above 100
+ok - poll accepts a leading-zero threshold
+ok - poll fires only after quota drops below the threshold
+ok - poll rejects a missing option value
+ok - quota polling uses the shared bash timeout fallback
+ok - poll rejects malformed schema-five snapshots
+ok - poll preserves provider-level unknown quota
+ok - poll preserves unknown headroom under known semantics
+ok - codebuddy provider resolves its own source id
+ok - codebuddy poll reads the opencli-backed fragment and fires below the threshold
+ok - codebuddy arm refuses to arm without opencli
+ok - a failed codebuddy read reports an opencli-specific error
+# all fm-procevent-quota tests passed

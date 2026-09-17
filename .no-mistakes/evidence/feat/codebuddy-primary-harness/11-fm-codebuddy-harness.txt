@@ -1,0 +1,8 @@
+ok - fm-harness.sh: ancestry detects both anchored codebuddy names and rejects longer fragments
+ok - fm-harness.sh: CODEBUDDY_* runtime variables are not an identity; ancestry still outranks a retained marker
+ok - bin/fm-session-lock-lib.sh + bin/fm-agent-process-lib.sh: codebuddy holds the lock and reads as an agent
+ok - fm-wake-lib: codebuddy is autoarm, codex stays persistent, and the override still wins
+ok - bin/fm-supervision-instructions.sh: codebuddy renders its own Stop-hook-owned protocol
+ok - bin/fm-turnend-guard.sh: --codebuddy is an accepted autoarm-cooperation alias
+ok - tracked .codebuddy/settings.json mirrors the Claude hook registration on codebuddy's own settings path
+ok - fm-bootstrap: dispatch validation owns the codebuddy effort vocabulary

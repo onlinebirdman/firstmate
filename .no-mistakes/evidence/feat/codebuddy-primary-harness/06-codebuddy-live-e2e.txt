@@ -1,0 +1,2 @@
+ok - codebuddy: a SessionStart hook runs, sees CLAUDE_PROJECT_DIR, and its stdout reaches model context
+rc=0

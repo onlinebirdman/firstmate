@@ -1,0 +1,13 @@
+$ bin/fm-codebuddy-usage.sh quota > companion.json
+
+$ bin/fm-quota-choose.sh --snapshot <quota-axi> --companion <codebuddy> --candidate codebuddy:hy3
+codebuddy hy3
+exit=0
+
+$ bin/fm-quota-choose.sh --snapshot <quota-axi> --candidate codebuddy:hy3   (no companion)
+none
+exit=1
+
+$ ... --candidate claude:default --candidate codebuddy:hy3  (order preserved)
+codebuddy hy3
+exit=0

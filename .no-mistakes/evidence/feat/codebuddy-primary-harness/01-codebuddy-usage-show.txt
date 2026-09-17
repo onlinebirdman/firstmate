@@ -1,0 +1,10 @@
+$ bin/fm-codebuddy-usage.sh show
+codebuddy accounts:
+    qr78kbkd  18023910393  CodeBuddy个人体验版  plan=500 bonus=922.51000051 total=1422.51000051 nextExpiry=2026-09-21 22:46:43
+  * untrxps4  19120108346  CodeBuddy个人体验版  plan=500 bonus=1028.48000017 total=1528.48000017 nextExpiry=2026-09-25 21:10:47
+    7k8wk5p7  迪派思-捷鹏（达人对接）  CodeBuddy个人体验版  plan=498.78 bonus=0 total=498.78 nextExpiry=2026-09-30 23:59:59
+    mepkvarr  黄晓妮  CodeBuddy个人体验版  plan=232.81000002 bonus=0 total=232.81000002 nextExpiry=2026-09-30 23:59:59
+    xdtacpvu  捷鹏  CodeBuddy个人体验版  plan=0 bonus=8.1 total=8.1 nextExpiry=2026-10-15 10:40:05
+current: untrxps4
+
+exit=0
